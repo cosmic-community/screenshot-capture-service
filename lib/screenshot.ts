@@ -16,8 +16,13 @@ export async function captureScreenshot(
 
   try {
     // Launch browser with optimal settings for screenshot capture
+    // Use bundled Chromium or install if needed
     browser = await puppeteer.launch({
       headless: 'new',
+      // Use bundled Chromium to avoid Chrome installation issues
+      executablePath: process.env.NODE_ENV === 'production' 
+        ? process.env.PUPPETEER_EXECUTABLE_PATH 
+        : undefined,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -26,6 +31,12 @@ export async function captureScreenshot(
         '--no-first-run',
         '--no-zygote',
         '--disable-gpu',
+        '--disable-extensions',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
       ],
     })
 
