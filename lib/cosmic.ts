@@ -18,12 +18,22 @@ export async function uploadScreenshot(
   sourceUrl: string
 ) {
   try {
-    const formData = new FormData()
-    const blob = new Blob([imageBuffer], { type: 'image/png' })
-    formData.append('media', blob, filename)
-    formData.append('folder', 'screenshots')
+    // Create proper media object for Cosmic SDK
+    const mediaFile = {
+      originalname: filename,
+      buffer: imageBuffer,
+      mimetype: 'image/png'
+    }
+
+    const media = await cosmic.media.insertOne({
+      media: mediaFile,
+      folder: 'screenshots',
+      metadata: {
+        source_url: sourceUrl,
+        capture_timestamp: new Date().toISOString()
+      }
+    })
     
-    const media = await cosmic.media.insertOne(formData)
     return media.media
   } catch (error) {
     console.error('Error uploading screenshot to Cosmic:', error)

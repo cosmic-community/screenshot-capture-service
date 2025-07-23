@@ -58,12 +58,13 @@ interface ApiResponse<T = any> {
 
 // Component prop types
 interface ScreenshotFormProps {
-  onScreenshotCapture: (media: CosmicMedia) => void;
+  onScreenshotCapture: (media: CosmicMedia, url: string) => void;
 }
 
 interface ScreenshotPreviewProps {
   media: CosmicMedia;
   sourceUrl: string;
+  onNewScreenshot: () => void;
 }
 
 interface LoadingSpinnerProps {
