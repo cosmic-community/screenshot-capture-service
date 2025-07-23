@@ -57,7 +57,7 @@ export default function HomePage() {
               <div className="text-green-400">
                 curl -X POST {typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/api/screenshot \<br/>
                 &nbsp;&nbsp;-H "Content-Type: application/json" \<br/>
-                &nbsp;&nbsp;-d '{"{"}"url": "https://example.com"{"}"}'
+                &nbsp;&nbsp;-d '{`{"url": "https://example.com"}`}'
               </div>
             </div>
             
