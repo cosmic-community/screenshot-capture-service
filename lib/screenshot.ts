@@ -16,33 +16,63 @@ export async function captureScreenshot(
   let browser = null
 
   try {
-    // Configure chromium for serverless environments
-    const executablePath = process.env.NODE_ENV === 'production'
-      ? await chromium.executablePath()
-      : process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome'
+    // Configure executable path based on environment
+    let executablePath: string
+    let launchArgs: string[]
 
-    // Launch browser with @sparticuz/chromium optimizations
+    if (process.env.NODE_ENV === 'production') {
+      // Check if we're in a Docker container with system Chromium
+      if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+        executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
+        launchArgs = [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-extensions',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+        ]
+      } else {
+        // Use @sparticuz/chromium for serverless environments
+        executablePath = await chromium.executablePath()
+        launchArgs = chromium.args
+      }
+    } else {
+      // Development environment
+      executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome'
+      launchArgs = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+        '--disable-extensions',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+      ]
+    }
+
+    // Launch browser with appropriate configuration
     browser = await puppeteer.launch({
-      args: process.env.NODE_ENV === 'production' 
-        ? chromium.args 
-        : [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--disable-gpu',
-            '--disable-extensions',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding',
-            '--disable-features=TranslateUI',
-            '--disable-ipc-flooding-protection',
-          ],
-      defaultViewport: chromium.defaultViewport,
+      args: launchArgs,
+      defaultViewport: process.env.PUPPETEER_EXECUTABLE_PATH ? null : chromium.defaultViewport,
       executablePath,
-      headless: process.env.NODE_ENV === 'production' ? chromium.headless : true,
+      headless: true,
+      ignoreDefaultArgs: ['--disable-extensions'],
     })
 
     const page = await browser.newPage()
