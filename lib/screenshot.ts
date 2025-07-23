@@ -42,7 +42,7 @@ export async function captureScreenshot(
           ],
       defaultViewport: chromium.defaultViewport,
       executablePath,
-      headless: chromium.headless,
+      headless: process.env.NODE_ENV === 'production' ? chromium.headless : true,
     })
 
     const page = await browser.newPage()
@@ -65,8 +65,8 @@ export async function captureScreenshot(
       timeout: 30000,
     })
 
-    // Wait for page to be fully loaded
-    await page.waitForTimeout(2000)
+    // Wait for page to be fully loaded using delay function
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
     // Capture screenshot
     const screenshot = await page.screenshot({
