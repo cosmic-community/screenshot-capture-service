@@ -14,6 +14,7 @@ A powerful web application that captures high-quality screenshots from any websi
 - ⚡ **Real-time Processing** - Live status updates during screenshot capture
 - 🛡️ **Error Handling** - Robust validation and error handling for invalid URLs
 - 📋 **Screenshot History** - Track and manage all captured screenshots
+- 🔄 **Dual Screenshot Methods** - Playwright primary with htmlcsstoimage.com fallback
 
 ## Clone this Bucket and Code Repository
 
@@ -40,7 +41,8 @@ The app has been tailored to work with your existing Cosmic content structure an
 - **Next.js 15** - React framework with App Router
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first CSS framework
-- **Puppeteer** - Headless browser for screenshot capture
+- **Playwright** - Modern browser automation for screenshot capture
+- **htmlcsstoimage.com** - Fallback API service for screenshot generation
 - **Cosmic SDK** - Content and media management
 - **React** - UI component library
 
@@ -51,6 +53,7 @@ The app has been tailored to work with your existing Cosmic content structure an
 - Node.js 18.0 or later
 - Bun package manager
 - Cosmic account and bucket
+- Optional: htmlcsstoimage.com API key for fallback service
 
 ### Installation
 
@@ -75,6 +78,9 @@ The app has been tailored to work with your existing Cosmic content structure an
    COSMIC_BUCKET_SLUG=your-bucket-slug
    COSMIC_READ_KEY=your-read-key
    COSMIC_WRITE_KEY=your-write-key
+   
+   # Optional: For fallback service
+   HTMLCSSTOIMAGE_API_KEY=your-htmlcsstoimage-api-key
    ```
 
 4. **Run the development server**
@@ -84,6 +90,22 @@ The app has been tailored to work with your existing Cosmic content structure an
 
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 📡 Screenshot Methods
+
+This application uses a dual-method approach for maximum reliability:
+
+### Primary Method: Playwright
+- **Modern browser automation** - More reliable than Puppeteer
+- **Better performance** - Faster screenshot generation
+- **Enhanced stability** - Better handling of complex websites
+- **Local processing** - No external API dependencies
+
+### Fallback Method: htmlcsstoimage.com API
+- **Cloud-based service** - External API for screenshot generation
+- **High reliability** - Professional screenshot service
+- **Automatic fallback** - Activates when Playwright fails
+- **Requires API key** - Sign up at [htmlcsstoimage.com](https://htmlcsstoimage.com)
 
 ## 📡 Cosmic SDK Examples
 
@@ -184,10 +206,29 @@ This application integrates with Cosmic's media management system to:
 
 Make sure to set these environment variables in your hosting platform:
 
+**Required:**
 ```
 COSMIC_BUCKET_SLUG=your-bucket-slug
 COSMIC_READ_KEY=your-read-key
 COSMIC_WRITE_KEY=your-write-key
 ```
+
+**Optional (for fallback service):**
+```
+HTMLCSSTOIMAGE_API_KEY=your-htmlcsstoimage-api-key
+```
+
+## 🔧 Troubleshooting
+
+### Screenshot Issues
+- **Playwright fails**: The app automatically falls back to htmlcsstoimage.com API
+- **Both methods fail**: Check your environment variables and network connectivity
+- **Memory issues**: Reduce screenshot dimensions or enable fullPage: false
+
+### API Key Setup
+1. Visit [htmlcsstoimage.com](https://htmlcsstoimage.com)
+2. Sign up for a free account
+3. Get your API key from the dashboard
+4. Add it to your environment variables
 
 <!-- README_END -->

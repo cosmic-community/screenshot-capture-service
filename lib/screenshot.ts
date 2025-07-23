@@ -1,5 +1,4 @@
-import puppeteer from 'puppeteer-core'
-import chromium from '@sparticuz/chromium'
+import { chromium } from 'playwright-core'
 import type { ScreenshotOptions } from '@/types'
 
 export async function captureScreenshot(
@@ -16,40 +15,33 @@ export async function captureScreenshot(
   let browser = null
 
   try {
-    // Configure executable path based on environment
-    let executablePath: string
-    let launchArgs: string[]
+    // First, try Playwright approach
+    return await captureWithPlaywright(url, { width, height, fullPage, quality })
+  } catch (playwrightError) {
+    console.warn('Playwright failed, trying htmlcsstoimage.com fallback:', playwrightError)
+    
+    // Fallback to htmlcsstoimage.com API
+    try {
+      return await captureWithHtmlCssToImage(url, { width, height, fullPage, quality })
+    } catch (fallbackError) {
+      console.error('Both screenshot methods failed:', { playwrightError, fallbackError })
+      throw new Error(`All screenshot methods failed. Playwright: ${playwrightError instanceof Error ? playwrightError.message : 'Unknown error'}. Fallback: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`)
+    }
+  }
+}
 
-    if (process.env.NODE_ENV === 'production') {
-      // Check if we're in a Docker container with system Chromium
-      if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-        executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
-        launchArgs = [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-          '--disable-extensions',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-features=TranslateUI',
-          '--disable-ipc-flooding-protection',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-        ]
-      } else {
-        // Use @sparticuz/chromium for serverless environments
-        executablePath = await chromium.executablePath()
-        launchArgs = chromium.args
-      }
-    } else {
-      // Development environment
-      executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome'
-      launchArgs = [
+async function captureWithPlaywright(
+  url: string, 
+  options: ScreenshotOptions
+): Promise<Buffer> {
+  const { width = 1920, height = 1080, fullPage = true } = options
+  let browser = null
+
+  try {
+    // Launch browser with Playwright
+    browser = await chromium.launch({
+      headless: true,
+      args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
@@ -63,57 +55,97 @@ export async function captureScreenshot(
         '--disable-renderer-backgrounding',
         '--disable-features=TranslateUI',
         '--disable-ipc-flooding-protection',
-      ]
-    }
-
-    // Launch browser with appropriate configuration
-    browser = await puppeteer.launch({
-      args: launchArgs,
-      defaultViewport: process.env.PUPPETEER_EXECUTABLE_PATH ? null : chromium.defaultViewport,
-      executablePath,
-      headless: true,
-      ignoreDefaultArgs: ['--disable-extensions'],
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+      ],
     })
 
-    const page = await browser.newPage()
-
-    // Set viewport size
-    await page.setViewport({
-      width,
-      height,
-      deviceScaleFactor: 2, // For high-resolution screenshots
+    const page = await browser.newPage({
+      viewport: {
+        width,
+        height,
+      },
     })
 
     // Set user agent to avoid bot detection
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-    )
+    await page.setExtraHTTPHeaders({
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+    })
 
     // Navigate to the URL with timeout
     await page.goto(url, {
-      waitUntil: 'networkidle2',
+      waitUntil: 'networkidle',
       timeout: 30000,
     })
 
-    // Wait for page to be fully loaded using delay function
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Wait for page to be fully loaded
+    await page.waitForTimeout(2000)
 
     // Capture screenshot
     const screenshot = await page.screenshot({
       fullPage,
       type: 'png',
-      quality: quality,
     })
 
     await browser.close()
-    return screenshot as Buffer
+    return screenshot
 
   } catch (error) {
     if (browser) {
       await browser.close()
     }
-    console.error('Error capturing screenshot:', error)
-    throw new Error(`Failed to capture screenshot: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw error
+  }
+}
+
+async function captureWithHtmlCssToImage(
+  url: string, 
+  options: ScreenshotOptions
+): Promise<Buffer> {
+  const { width = 1920, height = 1080 } = options
+
+  // Check if API key is available
+  if (!process.env.HTMLCSSTOIMAGE_API_KEY) {
+    throw new Error('HTMLCSSTOIMAGE_API_KEY environment variable is required for fallback service')
+  }
+
+  try {
+    const response = await fetch('https://hcti.io/v1/image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${Buffer.from(`${process.env.HTMLCSSTOIMAGE_API_KEY}:`).toString('base64')}`,
+      },
+      body: JSON.stringify({
+        url: url,
+        viewport_width: width,
+        viewport_height: height,
+        device_scale: 2,
+        format: 'png',
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`htmlcsstoimage.com API error: ${response.status} ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    
+    if (!result.url) {
+      throw new Error('No image URL returned from htmlcsstoimage.com')
+    }
+
+    // Download the image
+    const imageResponse = await fetch(result.url)
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to download image from htmlcsstoimage.com: ${imageResponse.status}`)
+    }
+
+    const arrayBuffer = await imageResponse.arrayBuffer()
+    return Buffer.from(arrayBuffer)
+
+  } catch (error) {
+    throw new Error(`htmlcsstoimage.com fallback failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 

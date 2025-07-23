@@ -16,8 +16,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@cosmicjs/sdk": "^1.5.5",
-    "puppeteer-core": "^23.8.0",
-    "@sparticuz/chromium": "^131.0.0"
+    "playwright-core": "^1.40.0",
+    "playwright-chromium": "^1.40.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
