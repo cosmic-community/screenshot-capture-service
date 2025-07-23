@@ -9,15 +9,15 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "prebuild": "bun run type-check",
-    "postinstall": "puppeteer browsers install chrome"
+    "prebuild": "bun run type-check"
   },
   "dependencies": {
     "next": "15.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@cosmicjs/sdk": "^1.5.5",
-    "puppeteer": "^23.8.0"
+    "puppeteer-core": "^23.8.0",
+    "@sparticuz/chromium": "^131.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

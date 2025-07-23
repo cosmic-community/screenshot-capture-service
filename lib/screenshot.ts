@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 import type { ScreenshotOptions } from '@/types'
 
 export async function captureScreenshot(
@@ -15,29 +16,33 @@ export async function captureScreenshot(
   let browser = null
 
   try {
-    // Launch browser with optimal settings for screenshot capture
-    // Use bundled Chromium or install if needed
+    // Configure chromium for serverless environments
+    const executablePath = process.env.NODE_ENV === 'production'
+      ? await chromium.executablePath()
+      : process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome'
+
+    // Launch browser with @sparticuz/chromium optimizations
     browser = await puppeteer.launch({
-      headless: 'new',
-      // Use bundled Chromium to avoid Chrome installation issues
-      executablePath: process.env.NODE_ENV === 'production' 
-        ? process.env.PUPPETEER_EXECUTABLE_PATH 
-        : undefined,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-        '--disable-extensions',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-      ],
+      args: process.env.NODE_ENV === 'production' 
+        ? chromium.args 
+        : [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-extensions',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-features=TranslateUI',
+            '--disable-ipc-flooding-protection',
+          ],
+      defaultViewport: chromium.defaultViewport,
+      executablePath,
+      headless: chromium.headless,
     })
 
     const page = await browser.newPage()
@@ -51,7 +56,7 @@ export async function captureScreenshot(
 
     // Set user agent to avoid bot detection
     await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     )
 
     // Navigate to the URL with timeout
